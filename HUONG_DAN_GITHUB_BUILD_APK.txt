@@ -1,0 +1,27 @@
+DE THI TIENG ANH 6 - BUILD APK BANG GITHUB ACTIONS
+====================================================
+
+1. Tao mot repository GitHub moi.
+2. Upload TOAN BO NOI DUNG cua thu muc nay vao repository.
+   Luu y: phai upload thu muc co build.gradle, settings.gradle va app/ o cap goc repository.
+3. Commit/push len nhanh main hoac master.
+4. Vao tab Actions tren GitHub.
+5. Chon workflow "Build Android APK".
+6. Neu muon build thu cong: bam "Run workflow".
+7. Cho GitHub build xong.
+8. Mo workflow run vua thanh cong -> phan Artifacts.
+9. Tai "DeThiTiengAnh6-debug-apk.zip".
+10. Giai nen de lay app-debug.apk va cai vao Android.
+
+Workflow se tu dong:
+- cai JDK 17
+- cai Android SDK 34 + Build Tools 34
+- cai Gradle 8.7
+- build app/debug APK
+- dua APK vao GitHub Actions Artifact
+
+KHONG CAN cai Android Studio tren may de build theo cach nay.
+
+Luu y bao mat:
+- Khong dua API key/mat khau vao workflow.
+- Neu project co secret/API key, nen dung GitHub Secrets va inject khi build.

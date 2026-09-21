@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>📚 Đề Tiếng Anh Lớp 6 — Cha Giao Đề, Con Làm Bài</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+
+  <h1>📚 Đề Tiếng Anh Lớp 6 — Cha Giao Đề, Con Làm Bài (2 máy, qua mạng)</h1>
+
+  <!-- ============== MÀN HÌNH CHỌN VAI TRÒ ============== -->
+  <div id="roleScreen" class="screen">
+    <div class="card center-card">
+      <b>Bạn là ai trên máy này?</b>
+      <p class="hint">Mỗi máy chỉ chọn 1 vai trò. Máy của Cha dùng để soạn đề / chấm bài; máy của Con dùng để làm bài.</p>
+      <div class="role-row">
+        <button id="roleParentBtn" class="primary role-btn" type="button">👨‍🏫 Tôi là CHA (ra đề, chấm bài)</button>
+        <button id="roleChildBtn" class="secondary role-btn" type="button">🧒 Tôi là CON (làm bài)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== MÀN HÌNH VÀO PHÒNG ============== -->
+  <div id="joinScreen" class="screen" style="display:none">
+    <div class="card">
+      <b>Vào phòng học chung</b>
+      <p class="hint">
+        Cha tự nghĩ ra 1 mã phòng bất kỳ (vd: <b>ANH6A</b>) rồi gửi mã đó cho Con —
+        cả hai cùng gõ đúng mã đó vào ô dưới để vào chung 1 "lớp học" riêng, không cần đăng nhập gì cả.<br>
+        <i>Dùng chung hạ tầng phòng với các trò chơi trong Hub — mỗi phần mềm tự dùng 1 nhánh dữ liệu riêng
+        trong cùng 1 phòng nên có thể tái sử dụng qua lại cùng 1 mã.</i>
+      </p>
+      <label class="hint" for="displayNameInput" style="display:block;margin-top:10px">Tên hiển thị của bạn:</label>
+      <input id="displayNameInput" type="text" placeholder="Tên hiển thị (vd: Bố Nam / Bé Nam)" autocomplete="off" spellcheck="false">
+
+      <input id="roomCodeInput" type="text" placeholder="Gõ mã phòng (vd: ANH6A)" autocomplete="off" spellcheck="false" style="margin-top:12px">
+      <button id="joinBtn" class="primary" type="button">➡️ VÀO PHÒNG / TẠO PHÒNG MỚI</button>
+      <div id="joinError" class="error"></div>
+      <div id="savedRoomsBox" style="display:none;margin-top:14px"></div>
+      <button id="backToRoleBtn" class="link-btn" type="button">← Đổi lại vai trò</button>
+    </div>
+  </div>
+
+  <!-- ============== MÀN HÌNH CHÍNH ============== -->
+  <div id="mainScreen" class="screen" style="display:none">
+    <div class="topbar">
+      <div id="roomLabel" class="room-label"></div>
+      <div id="statusLabel" class="status-label">Đang đồng bộ...</div>
+      <button id="settingsBtn" class="secondary small" type="button" style="display:none">⚙️ Cài Gemini API</button>
+      <button id="ttsSettingsBtn" class="secondary small" type="button">🎧 Giọng đọc</button>
+      <button id="leaveBtn" class="secondary small" type="button">↩ Rời phòng</button>
+    </div>
+
+    <!-- =========================================================
+         KHUNG CHAT NỔI — y hệt cơ chế "Chat nhóm" bên plugin 🧩 3D
+         Work Manager: 1 khối DUY NHẤT, kéo-thả di chuyển tự do bằng
+         thanh tiêu đề (giữ chuột/ngón tay rồi kéo), bấm nút ▁ để THU
+         GỌN co hẳn lại thành 1 bong bóng tròn nổi 💬 (không chỉ ẩn nội
+         dung mà đổi luôn hình dạng) — bấm lại vào bong bóng đó để mở
+         ra như cũ. Luôn hiện dù đang ở màn hình nào trong phòng, có 2
+         tab: "Nhắn tin" (chat thật 2 chiều Cha ⇄ Con) và "Hỏi AI".
+    ========================================================== -->
+    <div id="floatingChatBox" class="floating-chat-box is-collapsed" style="display:none">
+      <div id="floatingChatHeader" class="floating-chat-header">
+        <span class="floating-chat-title-icon">💬</span>
+        <div class="quick-chat-tabs floating-chat-tabs">
+          <button type="button" id="floatingTabDirectBtn" class="quick-chat-tab-btn is-active" data-tab="direct"><span id="floatingChatTitle">Nhắn cho Con</span></button>
+          <button type="button" id="floatingTabAiBtn" class="quick-chat-tab-btn" data-tab="ai">🤖 Hỏi AI</button>
+          <button type="button" id="floatingTabScratchBtn" class="quick-chat-tab-btn" data-tab="scratch" title="Giấy nháp vẽ tay chung">📝 Nháp</button>
+        </div>
+        <button type="button" id="voiceCallBtn" class="floating-chat-call-btn" title="Gọi thoại trực tiếp">📞</button>
+        <span id="floatingChatDot" class="chat-dot floating-chat-dot" style="display:none"></span>
+        <button type="button" id="floatingChatToggleBtn" class="floating-chat-toggle-btn" title="Thu gọn/Mở rộng">💬</button>
+      </div>
+      <div id="floatingChatBody" class="floating-chat-body">
+        <div id="floatingChatPanelDirect" class="quick-chat-panel is-active">
+          <div id="floatingChatLog" class="quick-chat-log floating-chat-log"></div>
+          <div id="voiceRecordingBar" class="voice-recording-bar" style="display:none">
+            🔴 Đang ghi âm... <span id="voiceRecordingTime">0:00</span>
+            <button id="voiceRecordStopBtn" type="button" class="secondary small">⏹ Gửi</button>
+            <button id="voiceRecordCancelBtn" type="button" class="secondary small">✖ Hủy</button>
+          </div>
+          <div class="quick-chat-input-row">
+            <input id="floatingChatInput" type="text" placeholder="Nhắn gì đó cho cả nhóm..." autocomplete="off">
+            <button id="voiceMsgBtn" class="secondary small" type="button" title="Ghi âm tin nhắn thoại">🎤</button>
+            <button id="floatingChatSendBtn" class="secondary small" type="button">Gửi</button>
+          </div>
+        </div>
+        <div id="quickChatPanelAi" class="quick-chat-panel">
+          <div id="quickChatSuggestions" class="quick-chat-suggestions"></div>
+          <div id="quickChatLog" class="quick-chat-log floating-chat-log"></div>
+          <div class="quick-chat-input-row">
+            <input id="quickChatInput" type="text" placeholder="Hỏi AI thêm gì đó, vd: giải thích thêm câu 2..." autocomplete="off">
+            <button id="quickChatSendBtn" class="secondary small" type="button">Gửi</button>
+          </div>
+        </div>
+
+        <!-- =========================================================
+             📝 GIẤY NHÁP — tab THỨ 3 ngay trong khung chat nổi (không tách
+             khung riêng), dùng CHUNG cho cả nhóm (Cha & Con). Khổ giấy XEM
+             NHƯ VÔ HẠN — lăn chuột/chụm 2 ngón để phóng to-thu nhỏ, bấm
+             "✋ Kéo" (hoặc giữ chuột giữa) để cuộn sang vùng khác. Nét vẽ
+             đồng bộ qua đúng hạ tầng phòng Firestore sẵn có (nhánh riêng
+             "math6.whiteboard", không đụng nhánh khác), ăn theo vòng poll
+             ~1.5s sẵn có của cả phòng nên không tốn thêm request nào. Xem
+             initScratchpad()/renderScratchpadFromRoom() trong app.js.
+        ========================================================== -->
+        <div id="floatingPanelScratch" class="quick-chat-panel scratch-panel">
+          <div class="scratch-toolbar">
+            <input id="scratchColorInput" type="color" value="#2f8f5b" title="Màu nét vẽ">
+            <input id="scratchWidthInput" type="range" min="1" max="16" value="3" title="Độ dày nét">
+            <button type="button" id="scratchModeDrawBtn" class="secondary small scratch-mode-btn" title="Chế độ Vẽ">✏️ Vẽ</button>
+            <button type="button" id="scratchModePanBtn" class="secondary small scratch-mode-btn" title="Chế độ Kéo bảng">✋ Kéo</button>
+            <span class="scratch-toolbar-sep"></span>
+            <button type="button" id="scratchZoomOutBtn" class="secondary small" title="Thu nhỏ">➖</button>
+            <span id="scratchZoomLabel" class="scratch-zoom-label">100%</span>
+            <button type="button" id="scratchZoomInBtn" class="secondary small" title="Phóng to">➕</button>
+            <button type="button" id="scratchResetViewBtn" class="secondary small" title="Về giữa bảng, cỡ gốc 100%">🎯</button>
+            <span class="scratch-toolbar-sep"></span>
+            <button type="button" id="scratchUndoBtn" class="secondary small" title="Hoàn tác nét vừa vẽ CỦA MÌNH">↩️</button>
+            <button type="button" id="scratchClearBtn" class="secondary small" title="Xóa TOÀN BỘ bảng (cả 2 bên)">🗑️</button>
+          </div>
+          <div id="scratchCanvasWrap" class="scratch-canvas-wrap">
+            <canvas id="scratchCanvas" class="scratch-canvas"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------- Cuộc gọi thoại trực tiếp (WebRTC) — 1 khung nổi cố định
+         phía trên, hiện khi có cuộc gọi đến/đi/đang diễn ra, xem
+         updateVoiceCallUI()/showVoiceCallOverlay() trong app.js. ---------- -->
+    <div id="voiceCallOverlay" class="voice-call-overlay" style="display:none">
+      <div class="voice-call-card">
+        <div id="voiceCallStatusText" class="voice-call-status"></div>
+        <div id="voiceCallTimer" class="voice-call-timer" style="display:none">00:00</div>
+        <div class="voice-call-btn-row">
+          <button id="voiceCallAcceptBtn" class="primary small" type="button" style="display:none">✅ Nghe máy</button>
+          <button id="voiceCallDeclineBtn" class="secondary small" type="button" style="display:none">❌ Từ chối</button>
+          <button id="voiceCallMuteBtn" class="secondary small" type="button" style="display:none">🔇 Tắt mic</button>
+          <button id="voiceCallHangupBtn" class="secondary small" type="button" style="display:none">📴 Kết thúc</button>
+          <button id="voiceCallCancelBtn" class="secondary small" type="button" style="display:none">✖ Hủy gọi</button>
+        </div>
+      </div>
+      <audio id="voiceCallRemoteAudio" autoplay></audio>
+    </div>
+
+
+
+    <!-- ---------- KHUNG CÀI ĐẶT GEMINI (chỉ Cha) ---------- -->
+    <div id="settingsPanel" class="card" style="display:none">
+      <b>⚙️ Cài đặt Gemini API (dùng để nhờ AI soạn đề / chấm bài)</b>
+      <p class="hint">
+        Dùng CHUNG API Key &amp; model với plugin 🧩 AI Song Creator — chỉ cần cấu hình 1 lần ở
+        đây hoặc bên đó, phần mềm còn lại tự dùng luôn, khỏi phải nhập lại. Nếu bên AI Song
+        Creator đã lưu nhiều tài khoản API Key, phần mềm này cũng tự xoay sang tài khoản khác khi
+        tài khoản đang dùng hết hạn mức. Lấy API Key miễn phí tại
+        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio</a>.
+        Chỉ máy của Cha cần nhập key này — Con không cần.
+      </p>
+      <label class="hint" for="apiKeyInput">Gemini API Key:</label>
+      <input id="apiKeyInput" type="text" placeholder="Dán API Key vào đây" autocomplete="off" spellcheck="false">
+      <label class="hint" for="modelInput" style="margin-top:8px;display:block">Model:</label>
+      <input id="modelInput" type="text" placeholder="gemini-2.5-flash" autocomplete="off" spellcheck="false">
+      <button id="saveSettingsBtn" class="primary small" type="button" style="margin-top:10px">💾 Lưu</button>
+      <div id="settingsStatus" class="hint"></div>
+    </div>
+
+    <!-- ---------- KHUNG CÀI GIỌNG ĐỌC / TỐC ĐỘ NGHE (cả Cha & Con dùng được —
+         lưu RIÊNG trên từng máy vì mỗi trình duyệt có sẵn 1 danh sách giọng
+         đọc khác nhau, không đồng bộ qua phòng). Áp dụng cho MỌI nút "🔊 Nghe"
+         trong app (khung soạn đề, xem trước đề, Con làm bài, Cha xem lại...). ---------- -->
+    <div id="ttsSettingsPanel" class="card" style="display:none">
+      <b>🎧 Cài đặt giọng đọc (áp dụng cho mọi nút "🔊 Nghe")</b>
+      <p class="hint">
+        Cài đặt này lưu riêng trên máy này — máy Cha và máy Con có thể chọn giọng/tốc độ khác nhau
+        tùy ý, không ảnh hưởng lẫn nhau. Danh sách giọng đọc do chính trình duyệt cung cấp (Chrome
+        có sẵn nhiều giọng tiếng Anh khác nhau).
+      </p>
+      <label class="hint" for="ttsVoiceSelect" style="display:block;margin-top:6px">Giọng đọc:</label>
+      <select id="ttsVoiceSelect"></select>
+      <label class="hint" for="ttsSpeedSelect" style="display:block;margin-top:8px">Tốc độ đọc (mức độ nghe, từ dễ tới khó):</label>
+      <select id="ttsSpeedSelect">
+        <option value="0.6">🟢 Rất chậm — mới học nghe</option>
+        <option value="0.75">🟢 Chậm — dễ</option>
+        <option value="0.92" selected>🟡 Vừa — chuẩn</option>
+        <option value="1.05">🟠 Nhanh — khó</option>
+        <option value="1.2">🔴 Rất nhanh — thử thách</option>
+      </select>
+      <div class="field-row two-col" style="margin-top:10px">
+        <button id="ttsTestBtn" class="secondary small" type="button">🔊 Nghe thử</button>
+        <button id="saveTtsSettingsBtn" class="primary small" type="button">💾 Lưu</button>
+      </div>
+      <div id="ttsSettingsStatus" class="hint"></div>
+    </div>
+
+    <!-- =========================================================
+         GIAO DIỆN CHA
+    ========================================================== -->
+    <div id="parentView" style="display:none">
+
+      <!-- ---- Soạn đề mới ---- -->
+      <div id="composePanel" class="card" style="display:none">
+        <b>📝 Soạn đề mới cho con</b>
+
+        <!-- ---- Đề đã lưu: danh sách mẫu đề Cha đã lưu lại trước đây, đặt tên
+             tự động theo NGÀY + SỐ THỨ TỰ (vd "2026-09-13_01_Ôn tập Phân số")
+             để dễ nhìn/dễ sắp xếp — bấm "Dùng để sửa" để nạp lại vào khung soạn
+             bên dưới, sửa gì tùy ý rồi giao đề như bình thường. ---- -->
+        <div id="savedExamsSection" style="margin:10px 0 4px">
+          <button id="savedExamsToggleBtn" class="secondary small" type="button">📂 Đề đã lưu (<span id="savedExamsCount">0</span>)</button>
+          <div id="savedExamsBox" class="saved-exams-box" style="display:none"></div>
+        </div>
+
+        <div class="field-row">
+          <label>Tiêu đề đề bài:</label>
+          <input id="examTitleInput" type="text" placeholder="VD: Ôn tập Thì hiện tại đơn — Tiếng Anh 6">
+        </div>
+
+        <div class="field-row two-col">
+          <div>
+            <label>Hình thức làm bài:</label>
+            <select id="examModeSelect">
+              <option value="mcq">Trắc nghiệm</option>
+              <option value="essay">Tự luận</option>
+              <option value="both">Cả trắc nghiệm và tự luận</option>
+            </select>
+          </div>
+          <div>
+            <label>Thời gian làm bài (phút):</label>
+            <input id="examDurationInput" type="number" min="1" max="180" value="30">
+          </div>
+        </div>
+
+        <div class="tabbar">
+          <button id="tabManualBtn" class="tab-btn active" type="button">✍️ Tự soạn tay</button>
+          <button id="tabAiBtn" class="tab-btn" type="button">🤖 Nhờ AI soạn đề</button>
+          <button id="tabSemesterBtn" class="tab-btn" type="button">🎓 Đề Thi Học Kỳ</button>
+          <button id="tabDubBtn" class="tab-btn" type="button">🎙️ Chấm Lồng Tiếng</button>
+        </div>
+
+        <!-- ---- Tab: tự soạn tay ---- -->
+        <div id="manualTab" class="tab-panel">
+          <p class="hint">Thêm từng câu hỏi bên dưới. Với trắc nghiệm, nhớ chọn đáp án đúng.</p>
+          <div class="add-q-row">
+            <button id="addMcqBtn" class="secondary small" type="button">➕ Thêm câu trắc nghiệm</button>
+            <button id="addEssayBtn" class="secondary small" type="button">➕ Thêm câu tự luận</button>
+          </div>
+        </div>
+
+        <!-- ---- Tab: nhờ AI soạn đề ---- -->
+        <div id="aiTab" class="tab-panel" style="display:none">
+          <label>Chọn nội dung muốn ra đề (chọn 1 hoặc nhiều):</label>
+          <div id="topicChecklist" class="topic-grid"></div>
+
+          <div class="field-row two-col">
+            <div>
+              <label>Số câu trắc nghiệm:</label>
+              <input id="aiMcqCountInput" type="number" min="0" max="20" value="5">
+            </div>
+            <div>
+              <label>Số câu tự luận:</label>
+              <input id="aiEssayCountInput" type="number" min="0" max="10" value="2">
+            </div>
+          </div>
+
+          <div class="field-row">
+            <label>Mức độ khó / phức tạp của đề:</label>
+            <select id="aiDifficultySelect">
+              <option value="easy">🟢 Dễ — cơ bản, làm quen</option>
+              <option value="medium" selected>🟡 Vừa — chuẩn theo chương trình</option>
+              <option value="hard">🟠 Khó — nâng cao, nhiều bước tính</option>
+              <option value="very_hard">🔴 Rất khó — phức tạp, đánh đố, kết hợp nhiều dạng</option>
+            </select>
+          </div>
+
+          <label style="margin-top:8px;display:block">Yêu cầu thêm cho AI (không bắt buộc):</label>
+          <textarea id="aiExtraPromptInput" rows="2" placeholder="VD: Ra đề vừa sức, có 1 đoạn đọc hiểu ngắn về chủ đề trường học..."></textarea>
+
+          <label style="margin-top:8px;display:block">Đính kèm ảnh/PDF/file mẫu đề tham khảo (không bắt buộc):</label>
+          <input id="aiSampleFileInput" type="file" accept="image/*,.pdf,.txt">
+          <div id="aiSampleFileName" class="hint"></div>
+
+          <label style="margin-top:6px;display:flex;align-items:flex-start;gap:6px;cursor:pointer">
+            <input id="aiFollowSampleExactly" type="checkbox" style="margin-top:3px">
+            <span>📌 Lấy Y CHANG file mẫu này để ra đề theo đúng dạng đó (bám sát cấu trúc, dạng bài, số câu, độ khó của file mẫu — bỏ qua chủ đề/số câu/độ khó/yêu cầu thêm ở trên, không cần chọn gì thêm)</span>
+          </label>
+
+          <button id="aiGenerateBtn" class="primary small" type="button" style="margin-top:10px">🤖 NHỜ AI SOẠN ĐỀ</button>
+          <div id="aiGenStatus" class="hint"></div>
+        </div>
+
+        <!-- ---- Tab: Đề thi Học kỳ — ra đề bám sát ĐÚNG FORM 1 đề thi cuối
+             kỳ thật (mẫu Global Success): các phần A.Listening / B.Phonetics /
+             C.Language Focus / D.Reading / E.Writing / F.Speaking, ra ĐÚNG
+             1 đề duy nhất (không tách mã đề chẵn/lẻ) + 1 bảng đáp án — nội
+             dung từ vựng/ngữ pháp lấy trong đúng phạm vi Sách Bài Tập lớp 6
+             (Global Success) mà Cha chọn Unit. Kết quả có thể xuất PDF in ra
+             giấy, hoặc giao cho Con làm ngay trong app (qua assignSemesterExam
+             → tái dùng đúng assignExam(), có màn "xem trước đề" trước khi
+             giao thật — phần F.Speaking không có nội dung viết nên không
+             đưa vào đề giao trong app). ---- -->
+        <div id="semesterTab" class="tab-panel" style="display:none">
+          <p class="hint">
+            Ra đề bám sát <b>đúng cấu trúc 1 đề thi cuối học kỳ thật</b>
+            (A. Listening – B. Phonetics – C. Language Focus – D. Reading –
+            E. Writing – F. Speaking) kèm đáp án — giống hệt form đề mẫu
+            Global Success. Nội dung từ vựng/ngữ pháp lấy trong phạm vi Sách
+            Bài Tập lớp 6 các Unit bạn chọn bên dưới.
+          </p>
+          <label>Chọn phạm vi ôn tập (chọn 1 hoặc nhiều Unit trong SBT Tiếng Anh 6):</label>
+          <div id="semesterUnitChecklist" class="topic-grid"></div>
+
+          <div class="field-row">
+            <label>Mức độ khó / phức tạp của đề:</label>
+            <select id="semesterDifficultySelect">
+              <option value="easy">🟢 Dễ — cơ bản, làm quen</option>
+              <option value="medium" selected>🟡 Vừa — chuẩn theo chương trình</option>
+              <option value="hard">🟠 Khó — nâng cao, nhiều bước tính</option>
+              <option value="very_hard">🔴 Rất khó — phức tạp, đánh đố, kết hợp nhiều dạng</option>
+            </select>
+          </div>
+
+          <label style="margin-top:8px;display:block">Yêu cầu thêm cho AI (không bắt buộc):</label>
+          <textarea id="semesterExtraPromptInput" rows="2" placeholder="VD: Phần Reading lấy chủ đề về nhà cửa, phần Writing thêm câu điều kiện loại 1..."></textarea>
+
+          <button id="semesterGenerateBtn" class="primary small" type="button" style="margin-top:10px">🎓 TẠO ĐỀ THI HỌC KỲ</button>
+          <div id="semesterGenStatus" class="hint"></div>
+
+          <div id="semesterResultBox" style="display:none;margin-top:10px">
+            <div class="hint">✅ Đã tạo xong đề <b id="semesterResultTitle"></b>.</div>
+            <button id="semesterPrintBtn" class="secondary small" type="button" style="margin-top:6px">📄 Xuất PDF (Đề + Đáp án)</button>
+            <div class="hint" style="margin-top:8px">Hoặc giao đề cho Con làm NGAY TRONG APP (tự động chấm như đề thường — riêng phần F.Speaking không có nội dung viết nên sẽ không đưa vào; sẽ có màn xem trước đề trước khi giao thật):</div>
+            <button id="semesterAssignBtn" class="primary small" type="button" style="margin-top:4px">📲 Giao Đề cho Con</button>
+            <button id="semesterDiscardBtn" class="secondary small" type="button" style="margin-top:6px">🗑️ Xoá, tạo lại</button>
+          </div>
+        </div>
+
+        <!-- ---- Tab: CHẤM LỒNG TIẾNG (Video / Audio) — Cha đưa vào 1 file
+             video hoặc audio con lồng tiếng tiếng Anh (hoặc bấm ghi âm/ghi
+             hình trực tiếp), AI nghe rồi chấm điểm theo 6 tiêu chí, chép lại
+             đúng những gì nghe được, chỉ ra TỪNG TỪ phát âm sai kèm cách sửa
+             + phiên âm IPA, và viết lời phê — y như cách AI chấm bài tự luận
+             ở khung chấm đề. Kết quả có thể In/Xuất PDF hoặc gửi thẳng cho
+             Con qua khung chat. Toàn bộ chạy cục bộ + gọi Gemini, KHÔNG ghi
+             file lên phòng Firestore (file video rất nặng). ---- -->
+        <div id="dubTab" class="tab-panel" style="display:none">
+          <p class="hint">
+            Đưa vào <b>video hoặc audio con lồng tiếng / đọc tiếng Anh</b> — AI sẽ nghe,
+            chép lại lời, chấm điểm phát âm – trôi chảy – ngữ điệu – đúng kịch bản –
+            tốc độ – khớp hình, chỉ ra từng lỗi sai kèm cách sửa và phiên âm IPA.
+            Cần đã nhập Gemini API Key ở nút ⚙️ phía trên.
+          </p>
+
+          <label>1️⃣ Chọn file video/audio (mp4, mov, webm, mp3, m4a, wav...):</label>
+          <input id="dubFileInput" type="file" accept="video/*,audio/*">
+          <div class="dub-rec-row">
+            <button id="dubRecAudioBtn" class="secondary small" type="button">🎤 Ghi âm trực tiếp</button>
+            <button id="dubRecVideoBtn" class="secondary small" type="button">📹 Quay video trực tiếp</button>
+            <button id="dubRecStopBtn" class="secondary small" type="button" style="display:none">⏹ Dừng &amp; dùng bản ghi</button>
+            <span id="dubRecTimer" class="dub-rec-timer" style="display:none">0:00</span>
+          </div>
+          <div id="dubFileInfo" class="hint"></div>
+          <video id="dubPreviewVideo" class="dub-preview" controls playsinline style="display:none"></video>
+          <audio id="dubPreviewAudio" class="dub-preview" controls style="display:none"></audio>
+
+          <label style="margin-top:10px;display:block">2️⃣ Kịch bản gốc tiếng Anh (không bắt buộc — có thì chấm chính xác hơn nhiều):</label>
+          <textarea id="dubScriptInput" rows="4" placeholder="Dán lời thoại tiếng Anh gốc con phải lồng vào đây. Bỏ trống thì AI tự nghe và tự đánh giá."></textarea>
+
+          <div class="field-row two-col" style="margin-top:8px">
+            <div>
+              <label>Trình độ người học:</label>
+              <select id="dubLevelSelect">
+                <option value="grade6" selected>🎒 Học sinh lớp 6 (mới học)</option>
+                <option value="grade9">📘 Học sinh THCS khá</option>
+                <option value="grade12">🎓 Học sinh THPT / luyện thi</option>
+                <option value="adult">💼 Người lớn / giao tiếp công việc</option>
+              </select>
+            </div>
+            <div>
+              <label>Độ khắt khe khi chấm:</label>
+              <select id="dubStrictSelect">
+                <option value="gentle">🟢 Nhẹ nhàng — khích lệ là chính</option>
+                <option value="normal" selected>🟡 Vừa — chuẩn trên lớp</option>
+                <option value="strict">🟠 Khắt khe — chuẩn thi cử</option>
+                <option value="native">🔴 Rất khắt khe — chuẩn người bản xứ</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field-row two-col">
+            <div>
+              <label>Giọng chuẩn đối chiếu:</label>
+              <select id="dubAccentSelect">
+                <option value="any" selected>🌐 Không bắt buộc (Anh – Mỹ đều được)</option>
+                <option value="us">🇺🇸 Giọng Mỹ (American)</option>
+                <option value="uk">🇬🇧 Giọng Anh (British)</option>
+              </select>
+            </div>
+            <div>
+              <label>Thang điểm:</label>
+              <select id="dubMaxScoreSelect">
+                <option value="10" selected>Thang 10</option>
+                <option value="100">Thang 100</option>
+              </select>
+            </div>
+          </div>
+
+          <label style="margin-top:6px;display:flex;align-items:flex-start;gap:6px;cursor:pointer">
+            <input id="dubCheckSyncInput" type="checkbox" checked style="margin-top:3px">
+            <span>🎬 Có chấm cả độ <b>khớp khẩu hình / khớp hình ảnh</b> (chỉ có tác dụng khi đưa vào file VIDEO)</span>
+          </label>
+
+          <label style="margin-top:6px;display:block">Yêu cầu thêm cho AI (không bắt buộc):</label>
+          <textarea id="dubExtraPromptInput" rows="2" placeholder="VD: chú ý kỹ âm cuối /s/, /ed/; nhận xét thêm về cảm xúc khi lồng tiếng nhân vật..."></textarea>
+
+          <button id="dubGradeBtn" class="primary small" type="button" style="margin-top:10px">🎙️ CHẤM LỒNG TIẾNG BẰNG AI</button>
+          <div id="dubGradeStatus" class="hint"></div>
+
+          <div id="dubResultBox" class="dub-result-box" style="display:none"></div>
+          <div id="dubResultActions" class="field-row two-col" style="display:none;margin-top:10px">
+            <button id="dubPrintBtn" class="secondary small" type="button">🖨️ In / Xuất PDF phiếu chấm</button>
+            <button id="dubSendChildBtn" class="secondary small" type="button">📤 Gửi nhận xét cho Con</button>
+          </div>
+        </div>
+
+        <!-- ---- Thống kê số câu trong đề: bao nhiêu câu do AI tạo / bao
+             nhiêu câu Cha tự soạn tay — chỉ hiện khi đề đang có ít nhất 1 câu. ---- -->
+        <div id="draftStatsBox" class="hint" style="display:none"></div>
+
+        <!-- ---- Nút thu gọn/mở rộng NHANH toàn bộ danh sách câu hỏi cùng lúc
+             (đề dài nhiều câu đỡ phải cuộn) — chỉ hiện khi có ít nhất 1 câu. ---- -->
+        <button id="draftCollapseAllBtn" class="secondary small" type="button" style="display:none;margin-top:8px">➖ Thu gọn tất cả câu</button>
+
+        <!-- ---- Danh sách câu hỏi nháp (dùng chung cho cả 2 tab) ---- -->
+        <div id="draftQuestionsBox" class="draft-box"></div>
+
+        <div class="field-row two-col" style="margin-top:14px">
+          <button id="saveDraftTemplateBtn" class="secondary small" type="button">💾 Lưu đề này (dùng lại sau)</button>
+          <button id="printDraftBtn" class="secondary small" type="button">🖨️ In đề / Xuất PDF</button>
+        </div>
+        <button id="assignBtn" class="primary" type="button" style="margin-top:10px">📤 GIAO ĐỀ CHO CON</button>
+        <div id="assignError" class="error"></div>
+      </div>
+
+      <!-- ---- Trạng thái đang chờ con làm ---- -->
+      <div id="waitingChildPanel" class="card" style="display:none">
+        <b>⏳ Đã giao đề — đang chờ con làm bài</b>
+        <p id="waitingChildText" class="hint"></p>
+        <div class="field-row two-col">
+          <button id="editAssignedExamBtn" class="secondary small" type="button">✏️ Sửa lại đề này</button>
+          <button id="printAssignedExamBtn" class="secondary small" type="button">🖨️ In đề / Xuất PDF</button>
+        </div>
+        <button id="cancelAssignBtn" class="secondary small" type="button" style="margin-top:8px">🗑️ Hủy đề này, soạn lại</button>
+      </div>
+
+      <!-- ---- Chấm bài ---- -->
+      <div id="gradingPanel" class="card" style="display:none">
+        <b>📥 Con đã nộp bài — xem lại và chấm điểm</b>
+        <div id="submissionSummary" class="hint"></div>
+        <div class="field-row two-col">
+          <button id="saveSubmittedTemplateBtn" class="secondary small" type="button">💾 Lưu đề này (dùng lại sau)</button>
+          <button id="printSubmittedExamBtn" class="secondary small" type="button">🖨️ In đề / Xuất PDF</button>
+        </div>
+        <!-- Cho phép thu hồi đề để sửa lại NGAY CẢ khi con đã nộp bài (trước
+             khi chấm) — giống hệt nút "Sửa lại đề này" ở khung đang chờ con
+             làm, chỉ khác là bấm ở đây sẽ hủy luôn bài con đã nộp. -->
+        <button id="editSubmittedExamBtn" class="secondary small" type="button" style="margin-top:8px">✏️ Thu hồi đề để sửa lại</button>
+        <button id="reviewCollapseAllBtn" class="secondary small" type="button" style="display:none;margin-top:8px">➖ Thu gọn tất cả câu</button>
+        <div id="submissionReview" class="draft-box"></div>
+
+        <button id="aiGradeBtn" class="primary small" type="button" style="margin-top:10px">🤖 CHẤM ĐIỂM BẰNG AI</button>
+        <div id="aiGradeStatus" class="hint"></div>
+
+        <button id="gradeCollapseAllBtn" class="secondary small" type="button" style="display:none;margin-top:8px">➖ Thu gọn tất cả câu</button>
+        <div id="gradeEditBox" class="draft-box" style="display:none;margin-top:10px"></div>
+
+        <div id="totalScoreRow" class="field-row two-col" style="display:none">
+          <div>
+            <label>Tổng điểm:</label>
+            <input id="finalTotalScoreInput" type="number" step="0.1">
+          </div>
+          <div>
+            <label>Điểm tối đa:</label>
+            <input id="finalMaxScoreInput" type="number" step="0.1" readonly>
+          </div>
+        </div>
+        <label id="overallCommentLabel" style="display:none;margin-top:8px">Lời phê chung:</label>
+        <textarea id="overallCommentInput" rows="3" style="display:none"></textarea>
+        <!-- "Hỏi AI" + chat "Nhắn cho Con/Cha" giờ nằm chung ở bong bóng chat
+             NỔI (2 tab, luôn hiện mọi lúc — xem khung ở đầu file). -->
+
+        <button id="returnBtn" class="primary" type="button" style="display:none;margin-top:10px">✅ TRẢ BÀI CHO CON</button>
+      </div>
+
+      <!-- ---- Đã trả bài ---- -->
+      <div id="doneParentPanel" class="card" style="display:none">
+        <b>✅ Đã trả bài cho con</b>
+        <div id="doneParentSummary" class="hint"></div>
+        <div class="field-row two-col" style="margin-top:10px">
+          <button id="saveDoneTemplateBtn" class="secondary small" type="button">💾 Lưu đề này (dùng lại sau)</button>
+          <button id="reuseDoneExamBtn" class="secondary small" type="button">🔁 Dùng lại đề này (soạn đề mới)</button>
+        </div>
+        <button id="newExamBtn" class="primary small" type="button" style="margin-top:10px">🆕 RA ĐỀ MỚI</button>
+      </div>
+
+    </div>
+
+    <!-- =========================================================
+         GIAO DIỆN CON
+    ========================================================== -->
+    <div id="childView" style="display:none">
+
+      <div id="childIdlePanel" class="card" style="display:none">
+        <b>😴 Chưa có đề nào được giao</b>
+        <p class="hint">Đợi cha giao đề nhé — trang này tự làm mới liên tục.</p>
+      </div>
+
+      <div id="childAssignedPanel" class="card" style="display:none">
+        <b>📩 Cha vừa giao đề mới!</b>
+        <div id="childAssignedInfo" class="hint"></div>
+        <button id="startExamBtn" class="primary" type="button" style="margin-top:10px">▶️ BẮT ĐẦU LÀM BÀI</button>
+      </div>
+
+      <div id="childExamPanel" class="card" style="display:none">
+        <div class="exam-topbar">
+          <b id="examRunningTitle"></b>
+          <div id="examTimer" class="exam-timer">--:--</div>
+        </div>
+        <div id="examQuestionsBox"></div>
+        <button id="submitExamBtn" class="primary" type="button" style="margin-top:14px">✅ NỘP BÀI</button>
+      </div>
+
+      <div id="childWaitingGradePanel" class="card" style="display:none">
+        <b>📨 Đã nộp bài — đang chờ cha chấm điểm</b>
+        <p class="hint">Trang này tự làm mới liên tục, không cần bấm gì thêm.</p>
+      </div>
+
+      <div id="childResultPanel" class="card" style="display:none">
+        <b>🎉 Cha đã trả bài!</b>
+        <div id="childResultSummary" class="result-summary"></div>
+        <button id="resultCollapseAllBtn" class="secondary small" type="button" style="display:none;margin-top:8px">➖ Thu gọn tất cả câu</button>
+        <div id="childResultDetail" class="draft-box"></div>
+        <!-- Nhắn trực tiếp cho Cha giờ dùng bong bóng chat NỔI (luôn hiện mọi
+             lúc, xem khung ở đầu file), không còn khung chat riêng ở đây nữa. -->
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ---------- XEM TRƯỚC ĐỀ trước khi giao thật cho Con — áp dụng cho MỌI
+       cách ra đề (tự soạn tay / nhờ AI soạn / Đề Thi Học Kỳ). Xem
+       openExamPreview()/closeExamPreview() trong app.js. ---------- -->
+  <div id="examPreviewModal" class="modal-overlay" style="display:none">
+    <div class="modal-box">
+      <div class="modal-header">
+        <b id="examPreviewTitle">👁 Xem trước đề</b>
+        <button id="examPreviewCloseBtn" class="link-btn" type="button">✖ Đóng</button>
+      </div>
+      <div id="examPreviewMeta" class="hint"></div>
+      <div id="examPreviewQuestionsBox" class="exam-preview-questions"></div>
+      <div class="modal-footer">
+        <button id="examPreviewBackBtn" class="secondary" type="button">✏️ Quay lại chỉnh sửa</button>
+        <button id="examPreviewConfirmBtn" class="primary" type="button">✅ Xác nhận, giao đề cho Con</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="../../projects_store.js"></script>
+<script src="app.js"></script>
+<script src="../../hub-lock-trigger.js"></script>
+</body>
+</html>

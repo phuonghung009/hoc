@@ -1,0 +1,82 @@
+DE THI TIENG ANH 6 - ANDROID PROJECT HOAN CHINH
+================================================
+
+Project nay dong goi nguyen plugin "english_exam_battle" vao Android WebView.
+Logic web, Firestore REST, Gemini API, chat, giay nhap, ghi am, goi thoai WebRTC,
+TTS va xuat PDF duoc giu trong assets/www; phan Android lam nhiem vu dong goi
+va cap quyen cho WebView.
+
+DA BO SUNG TRONG BAN NAY
+-------------------------
+1. Quyen RECORD_AUDIO + MODIFY_AUDIO_SETTINGS cho ghi am va goi WebRTC.
+2. WebView onPermissionRequest: khi trang xin micro, Android hien hop thoai xin quyen.
+3. WebView file chooser: cac o chon anh/PDF/TXT/audio/video co the mo bo chon file Android.
+4. Xu ly popup window.print() -> PrintManager -> co the "Luu duoi dang PDF".
+5. Don dep WebView/popup khi dong app.
+6. Them gradlew / gradlew.bat va BUILD_APK.bat. Neu may thieu gradle-wrapper.jar,
+   script tu tai wrapper 8.7 khi build (can Internet).
+
+YEU CAU MAY TINH
+-----------------
+- Windows 10/11
+- Android Studio moi (khuyen nghi)
+- JDK 17 (Android Studio thuong da kem JDK)
+- Android SDK 34
+- Internet lan dau de Gradle tai cac goi can thiet
+
+CACH BUILD APK DE NHAT
+-----------------------
+1. Giai nen ZIP.
+2. Mo thu muc "android_project" bang Android Studio.
+   Day la thu muc co settings.gradle, build.gradle va thu muc app.
+3. Cho Android Studio Sync xong. Neu hoi Trust Project -> Trust.
+4. Neu muon build nhanh bang Terminal/Command Prompt:
+      BUILD_APK.bat
+   Hoac:
+      gradlew.bat :app:assembleDebug
+5. APK sau khi build:
+      app\build\outputs\apk\debug\app-debug.apk
+6. Chep app-debug.apk vao dien thoai Android va cai dat.
+
+NEU ANDROID STUDIO BAO THIEU SDK
+---------------------------------
+Mo SDK Manager va cai:
+- Android SDK Platform 34
+- Android SDK Build-Tools 34.x
+
+QUYEN MICRO
+-----------
+Lan dau dung "Ghi am tin nhan" hoac "Goi thoai", Android se hoi quyen Micro.
+Chon "Cho phep". Neu da tu choi truoc do: Settings -> Apps -> De Thi Tieng Anh 6
+-> Permissions -> Microphone -> Allow.
+
+LUU Y VE FILE SYSTEM ACCESS API
+--------------------------------
+projects_store.js co chuc nang showDirectoryPicker() de quan tri Project ID tren
+Chrome. Android WebView khong cung cap API nay nhu Chrome desktop. App van dung
+PROJECTS mac dinh va Firestore/Gemini binh thuong; tinh nang tu chon thu muc JSON
+cua ProjectsStore khong duoc xem la chuc nang bat buoc tren Android.
+
+LUU Y VE TTS
+------------
+Nut "Nghe" su dung Web Speech API cua WebView/thiet bi. Danh sach voice co the
+khac Chrome tren PC tuy theo Android System Text-to-Speech va WebView cua may.
+
+LUU Y VE WEBRTC
+---------------
+Goi thoai dung STUN cong cong va signaling qua Firestore. Neu mang/NAT qua chat,
+WebRTC co the khong ket noi duoc; tin nhan thoai van co the dung thay the.
+
+LUU Y VE GEMINI API KEY
+-----------------------
+API key duoc luu trong localStorage theo code web hien tai. Khong dua key bi mat
+vao source public neu phat hanh app cho nhieu nguoi.
+
+TEN APP
+-------
+Sua app/src/main/res/values/strings.xml, bien app_name.
+
+ICON
+----
+Hien dang dung icon Android mac dinh. Co the thay bang icon rieng bang Android
+Studio -> app -> New -> Image Asset.
